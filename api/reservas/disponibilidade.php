@@ -36,15 +36,16 @@ if ($turno === null) {
     die(json_encode(['erro' => 'Horário fora dos turnos de funcionamento (Almoço 11h-15h ou Jantar 18h-23h).']));
 }
 
-$inicioTurno = $turno === 'Almoço' ? TURNO_ALMOCO_INICIO : TURNO_JANTAR_INICIO;
-$dataHoraTurno = new DateTime("$data $inicioTurno");
+$dataHoraReserva = new DateTime("$data $horarioCompleto");
 $agora = new DateTime();
-$horasAntecedencia = ($dataHoraTurno->getTimestamp() - $agora->getTimestamp()) / 3600;
+$horasAntecedencia = ($dataHoraReserva->getTimestamp() - $agora->getTimestamp()) / 3600;
 
 if ($horasAntecedencia < RESERVA_ANTECEDENCIA_MINIMA_HORAS) {
     http_response_code(400);
-    die(json_encode(['erro' => 'Reservas exigem no mínimo ' . RESERVA_ANTECEDENCIA_MINIMA_HORAS . ' horas de antecedência do início do turno.']));
+    die(json_encode(['erro' => 'Reservas exigem no mínimo ' . RESERVA_ANTECEDENCIA_MINIMA_HORAS . ' horas de antecedência do horário desejado.']));
 }
+
+$inicioTurno = $turno === 'Almoço' ? TURNO_ALMOCO_INICIO : TURNO_JANTAR_INICIO;
 
 $fimTurno = $turno === 'Almoço' ? TURNO_ALMOCO_FIM : TURNO_JANTAR_FIM;
 

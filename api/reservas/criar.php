@@ -34,12 +34,12 @@ if ($turno === null) {
 $inicioTurno = $turno === 'Almoço' ? TURNO_ALMOCO_INICIO : TURNO_JANTAR_INICIO;
 $fimTurno = $turno === 'Almoço' ? TURNO_ALMOCO_FIM : TURNO_JANTAR_FIM;
 
-$dataHoraTurno = new DateTime("$data $inicioTurno");
-$horasAntecedencia = ($dataHoraTurno->getTimestamp() - time()) / 3600;
+$dataHoraReserva = new DateTime("$data $horarioCompleto");
+$horasAntecedencia = ($dataHoraReserva->getTimestamp() - time()) / 3600;
 
 if ($horasAntecedencia < RESERVA_ANTECEDENCIA_MINIMA_HORAS) {
     http_response_code(400);
-    die(json_encode(['erro' => 'Reservas exigem no mínimo ' . RESERVA_ANTECEDENCIA_MINIMA_HORAS . ' horas de antecedência do início do turno.']));
+    die(json_encode(['erro' => 'Reservas exigem no mínimo ' . RESERVA_ANTECEDENCIA_MINIMA_HORAS . ' horas de antecedência do horário desejado.']));
 }
 
 function gerarCodigoConfirmacao(string $data): string
