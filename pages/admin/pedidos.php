@@ -20,6 +20,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new RuntimeException('Selecione uma forma de pagamento válida.');
             }
 
+            $stmt = $pdo->prepare('SELECT status FROM Pedidos WHERE id_pedido = ?');
+            $stmt->execute([$idPedido]);
+            $statusAtual = $stmt->fetchColumn();
+
+            if ($statusAtual === false) {
+                throw new RuntimeException('Pedido não encontrado.');
+            }
+            if (in_array($statusAtual, ['Finalizado', 'Cancelado'], true)) {
+                throw new RuntimeException("Pedido \"$statusAtual\" é definitivo e não pode receber pagamento.");
+            }
+
             $stmt = $pdo->prepare(
                 'SELECT COALESCE(SUM(quantidade * preco_unitario), 0) AS total FROM ItensPedido WHERE id_pedido = ?'
             );
@@ -36,6 +47,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $novoStatus = $_POST['status'] ?? '';
             if (!in_array($novoStatus, $statusValidos, true)) {
                 throw new RuntimeException('Status inválido.');
+            }
+
+            $stmt = $pdo->prepare('SELECT status FROM Pedidos WHERE id_pedido = ?');
+            $stmt->execute([$idPedido]);
+            $statusAtual = $stmt->fetchColumn();
+
+            if ($statusAtual === false) {
+                throw new RuntimeException('Pedido não encontrado.');
+            }
+            if (in_array($statusAtual, ['Finalizado', 'Cancelado'], true)) {
+                throw new RuntimeException("Pedido \"$statusAtual\" é definitivo e não pode mais ter o status alterado.");
             }
 
             $pdo->beginTransaction();
@@ -170,15 +192,19 @@ require __DIR__ . '/../../includes/header.php';
                 <td style="padding:0.5rem"><?= formatarDataHoraPhp($p['data_criacao']) ?></td>
                 <td style="padding:0.5rem"><?= formatarMoedaPhp($p['total']) ?></td>
                 <td style="padding:0.5rem">
-                    <form method="POST">
-                        <input type="hidden" name="acao" value="alterar_status">
-                        <input type="hidden" name="id_pedido" value="<?= $p['id_pedido'] ?>">
-                        <select name="status" onchange="this.form.submit()">
-                            <?php foreach ($statusValidos as $s): ?>
-                                <option value="<?= $s ?>" <?= $p['status'] === $s ? 'selected' : '' ?>><?= $s ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </form>
+                    <?php if (in_array($p['status'], ['Finalizado', 'Cancelado'], true)): ?>
+                        <strong><?= htmlspecialchars($p['status']) ?></strong>
+                    <?php else: ?>
+                        <form method="POST">
+                            <input type="hidden" name="acao" value="alterar_status">
+                            <input type="hidden" name="id_pedido" value="<?= $p['id_pedido'] ?>">
+                            <select name="status" onchange="this.form.submit()">
+                                <?php foreach ($statusValidos as $s): ?>
+                                    <option value="<?= $s ?>" <?= $p['status'] === $s ? 'selected' : '' ?>><?= $s ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </form>
+                    <?php endif; ?>
                 </td>
                 <td style="padding:0.5rem; display:flex; gap:0.4rem; flex-wrap:wrap">
                     <a class="btn btn-secundario" href="?<?= http_build_query(array_merge($_GET, ['detalhes' => $p['id_pedido']])) ?>">Detalhes</a>

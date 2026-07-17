@@ -27,6 +27,7 @@ function icone(string $nome, int $tamanho = 16): string
         'senha' => 'fa-solid fa-lock',
         'editar' => 'fa-solid fa-pen',
         'excluir' => 'fa-solid fa-trash',
+        'ranking' => 'fa-solid fa-trophy',
     ];
 
     $classe = $classes[$nome] ?? 'fa-solid fa-circle';

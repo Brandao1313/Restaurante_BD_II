@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/session.php';
+require_once __DIR__ . '/../../includes/log.php';
 
 header('Content-Type: application/json');
 
@@ -42,13 +43,17 @@ if ($funcionario && $funcionario['senha'] && password_verify($senha, $funcionari
 
     registrarLog($pdo, $funcionario['id_funcionario'], null, 'login', 'Login realizado');
 
+    $paginasPorPerfil = [
+        'administrador' => '/pages/admin/dashboard.php',
+        'cozinheiro' => '/pages/cozinheiro/dashboard.php',
+        'garcom' => '/pages/garcom/dashboard.php',
+    ];
+
     die(json_encode([
         'sucesso' => true,
         'perfil' => $funcionario['perfil'],
         'nome' => $funcionario['nome'],
-        'redirecionar' => $funcionario['perfil'] === 'administrador'
-            ? '/pages/admin/dashboard.php'
-            : '/pages/garcom/dashboard.php',
+        'redirecionar' => $paginasPorPerfil[$funcionario['perfil']] ?? '/pages/garcom/dashboard.php',
     ]));
 }
 
@@ -86,11 +91,3 @@ if ($cliente && password_verify($senha, $cliente['senha'])) {
 
 http_response_code(401);
 echo json_encode(['erro' => 'Email ou senha inválidos.']);
-
-function registrarLog(PDO $pdo, ?int $idFuncionario, ?int $idCliente, string $acao, string $detalhes): void
-{
-    $stmt = $pdo->prepare(
-        'INSERT INTO LogsAuditoria (id_funcionario, id_cliente, acao, detalhes, ip) VALUES (?, ?, ?, ?, ?)'
-    );
-    $stmt->execute([$idFuncionario, $idCliente, $acao, $detalhes, $_SERVER['REMOTE_ADDR'] ?? null]);
-}

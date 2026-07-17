@@ -20,6 +20,12 @@ $menus = [
         'Comandas' => ['comandas', '/pages/garcom/comandas.php'],
         'Histórico' => ['historico', '/pages/garcom/historico.php'],
     ],
+    'cozinheiro' => [
+        'Dashboard' => ['dashboard', '/pages/cozinheiro/dashboard.php'],
+        'Pedidos' => ['pedidos', '/pages/cozinheiro/pedidos.php'],
+        'Estoque' => ['insumos', '/pages/cozinheiro/estoque.php'],
+        'Histórico' => ['historico', '/pages/cozinheiro/historico.php'],
+    ],
     'administrador' => [
         'Dashboard' => ['dashboard', '/pages/admin/dashboard.php'],
         'Funcionários' => ['funcionarios', '/pages/admin/funcionarios.php'],

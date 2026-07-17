@@ -69,3 +69,17 @@ function reavaliarDisponibilidadeProduto(PDO $pdo, int $idProduto): void
         $pdo->prepare('UPDATE Produtos SET disponivel = 1 WHERE id_produto = ?')->execute([$idProduto]);
     }
 }
+
+/**
+ * Reavalia a disponibilidade de todos os produtos que dependem de um insumo
+ * (usado após reposição de estoque, ex.: cozinheiro registrando uma compra).
+ */
+function reavaliarProdutosPorInsumo(PDO $pdo, int $idInsumo): void
+{
+    $stmt = $pdo->prepare('SELECT DISTINCT id_produto FROM ProdutoInsumo WHERE id_insumo = ?');
+    $stmt->execute([$idInsumo]);
+
+    foreach ($stmt->fetchAll(PDO::FETCH_COLUMN) as $idProduto) {
+        reavaliarDisponibilidadeProduto($pdo, (int) $idProduto);
+    }
+}

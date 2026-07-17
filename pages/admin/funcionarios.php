@@ -19,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $perfil = $_POST['perfil'] ?? '';
             $senha = $_POST['senha'] ?? '';
 
-            if ($nome === '' || $cargo === '' || $email === '' || !in_array($perfil, ['administrador', 'garcom'], true)) {
+            if ($nome === '' || $cargo === '' || $email === '' || !in_array($perfil, ['administrador', 'garcom', 'cozinheiro'], true)) {
                 throw new RuntimeException('Preencha todos os campos obrigatórios corretamente.');
             }
             if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -115,12 +115,13 @@ require __DIR__ . '/../../includes/header.php';
                 <label for="perfil">Perfil</label>
                 <select id="perfil" name="perfil" required>
                     <option value="garcom" <?= ($funcionarioEdicao['perfil'] ?? '') === 'garcom' ? 'selected' : '' ?>>Garçom</option>
+                    <option value="cozinheiro" <?= ($funcionarioEdicao['perfil'] ?? '') === 'cozinheiro' ? 'selected' : '' ?>>Cozinheiro</option>
                     <option value="administrador" <?= ($funcionarioEdicao['perfil'] ?? '') === 'administrador' ? 'selected' : '' ?>>Administrador</option>
                 </select>
             </div>
             <div class="campo">
                 <label for="senha">Senha <?= $funcionarioEdicao ? '(deixe em branco para manter)' : '' ?></label>
-                <input type="password" id="senha" name="senha" <?= $funcionarioEdicao ? '' : 'required' ?>>
+                <input type="password" id="senha" name="senha" autocomplete="new-password" <?= $funcionarioEdicao ? '' : 'required' ?>>
             </div>
         </div>
         <button type="submit" class="btn"><?= $funcionarioEdicao ? 'Salvar Alterações' : 'Cadastrar' ?></button>

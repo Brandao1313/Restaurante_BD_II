@@ -331,6 +331,24 @@ a.card:hover {
     .grid-produtos { grid-template-columns: 1fr; }
 }
 
+.quadro-cozinha {
+    grid-template-columns: repeat(3, 1fr);
+    align-items: start;
+}
+
+@media (max-width: 820px) {
+    .quadro-cozinha { grid-template-columns: 1fr; }
+}
+
+.pedido-cozinha-card {
+    margin-bottom: 1rem;
+}
+
+.pedido-cozinha-card ul {
+    padding-left: 1.1rem;
+    margin: 0.5rem 0;
+}
+
 .produto-card {
     background: #fff;
     border-radius: var(--raio);

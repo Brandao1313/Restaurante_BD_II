@@ -75,7 +75,7 @@ CREATE TABLE IF NOT EXISTS Pagamentos (
 -- =====================================================================
 
 ALTER TABLE Funcionarios ADD COLUMN IF NOT EXISTS senha VARCHAR(255) NULL;
-ALTER TABLE Funcionarios ADD COLUMN IF NOT EXISTS perfil ENUM('administrador','garcom') DEFAULT 'garcom';
+ALTER TABLE Funcionarios ADD COLUMN IF NOT EXISTS perfil ENUM('administrador','garcom','cozinheiro') DEFAULT 'garcom';
 ALTER TABLE Funcionarios ADD COLUMN IF NOT EXISTS email VARCHAR(100) NULL UNIQUE;
 ALTER TABLE Funcionarios ADD COLUMN IF NOT EXISTS ativo BOOLEAN DEFAULT TRUE;
 
@@ -118,8 +118,11 @@ CREATE TABLE IF NOT EXISTS Insumos (
     nome VARCHAR(100) NOT NULL,
     quantidade DECIMAL(10,2) NOT NULL DEFAULT 0,
     unidade VARCHAR(20) NOT NULL,
-    quantidade_minima DECIMAL(10,2) DEFAULT 0
+    quantidade_minima DECIMAL(10,2) DEFAULT 0,
+    ultima_atualizacao DATETIME NULL
 );
+
+ALTER TABLE Insumos ADD COLUMN IF NOT EXISTS ultima_atualizacao DATETIME NULL;
 
 CREATE TABLE IF NOT EXISTS ProdutoInsumo (
     id_produto_insumo INT AUTO_INCREMENT PRIMARY KEY,
@@ -270,3 +273,13 @@ UPDATE Funcionarios SET
     senha = '$2y$10$4aN9tUUaUxRKaiJX5WFhOus0H9OZM5DQ24tDU8znl0zga1qbfOH9O',
     perfil = 'garcom'
 WHERE cargo IN ('Garçom', 'Garçonete') AND email IS NULL;
+
+-- USUÁRIOS COZINHEIRO (senha: cozinha123)
+UPDATE Funcionarios SET
+    email = CONCAT(LOWER(nome), '@bomsabor.com'),
+    senha = '$2y$10$XB8tO3rAsg.Q7B1/q5xWYuhXOr0q4QHKGAhrwue5q09ipyOL.0LyC',
+    perfil = 'cozinheiro'
+WHERE cargo IN ('Cozinheira', 'Churrasqueiro') AND email IS NULL;
+
+-- Normaliza acentos em emails gerados a partir do nome (login mais prático de digitar)
+UPDATE Funcionarios SET email = 'jessica@bomsabor.com' WHERE nome = 'Jéssica';

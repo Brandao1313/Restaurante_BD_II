@@ -9,6 +9,9 @@ if (usuarioLogado()) {
         case 'garcom':
             header('Location: ' . BASE_URL . '/pages/garcom/dashboard.php');
             break;
+        case 'cozinheiro':
+            header('Location: ' . BASE_URL . '/pages/cozinheiro/dashboard.php');
+            break;
         default:
             header('Location: ' . BASE_URL . '/pages/cliente/dashboard.php');
     }
