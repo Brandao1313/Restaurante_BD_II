@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../config/session.php';
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/flash.php';
+require_once __DIR__ . '/../../includes/funcoes_mesa.php';
 exigirPerfilPagina(['administrador']);
 
 $pdo = getConexao();
@@ -35,6 +36,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $status = $_POST['status'] ?? '';
             if (!in_array($status, $statusValidos, true)) {
                 throw new RuntimeException('Status inválido.');
+            }
+            if ($status === 'Livre' && mesaTemPedidoAtivo($pdo, $idMesa)) {
+                throw new RuntimeException('Não é possível liberar: a mesa possui pedido em aberto (aguardando pagamento).');
             }
             $pdo->prepare('UPDATE Mesas SET status=? WHERE id_mesa=?')->execute([$status, $idMesa]);
             definirFlash('sucesso', 'Status da mesa atualizado.');

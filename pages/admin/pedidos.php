@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../config/session.php';
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/flash.php';
 require_once __DIR__ . '/../../includes/funcoes_estoque.php';
+require_once __DIR__ . '/../../includes/funcoes_mesa.php';
 exigirPerfilPagina(['administrador']);
 
 $pdo = getConexao();
@@ -20,15 +21,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new RuntimeException('Selecione uma forma de pagamento válida.');
             }
 
-            $stmt = $pdo->prepare('SELECT status FROM Pedidos WHERE id_pedido = ?');
+            $stmt = $pdo->prepare('SELECT status, id_mesa FROM Pedidos WHERE id_pedido = ?');
             $stmt->execute([$idPedido]);
-            $statusAtual = $stmt->fetchColumn();
+            $pedidoAtual = $stmt->fetch();
 
-            if ($statusAtual === false) {
+            if (!$pedidoAtual) {
                 throw new RuntimeException('Pedido não encontrado.');
             }
-            if (in_array($statusAtual, ['Finalizado', 'Cancelado'], true)) {
-                throw new RuntimeException("Pedido \"$statusAtual\" é definitivo e não pode receber pagamento.");
+            if (in_array($pedidoAtual['status'], ['Finalizado', 'Cancelado'], true)) {
+                throw new RuntimeException("Pedido \"{$pedidoAtual['status']}\" é definitivo e não pode receber pagamento.");
             }
 
             $stmt = $pdo->prepare(
@@ -41,23 +42,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->prepare('INSERT INTO Pagamentos (id_pedido, valor, forma_pagamento) VALUES (?, ?, ?)')
                 ->execute([$idPedido, $total, $formaPagamento]);
             $pdo->prepare("UPDATE Pedidos SET status = 'Finalizado' WHERE id_pedido = ?")->execute([$idPedido]);
+            liberarMesaSeSemPedidosAtivos($pdo, $pedidoAtual['id_mesa'] !== null ? (int) $pedidoAtual['id_mesa'] : null);
             $pdo->commit();
-            definirFlash('sucesso', 'Pedido finalizado e pagamento registrado.');
+            definirFlash('sucesso', 'Pedido finalizado e pagamento registrado. Mesa liberada automaticamente se não houver outros pedidos ativos.');
         } elseif ($acao === 'alterar_status') {
             $novoStatus = $_POST['status'] ?? '';
             if (!in_array($novoStatus, $statusValidos, true)) {
                 throw new RuntimeException('Status inválido.');
             }
 
-            $stmt = $pdo->prepare('SELECT status FROM Pedidos WHERE id_pedido = ?');
+            $stmt = $pdo->prepare('SELECT status, id_mesa FROM Pedidos WHERE id_pedido = ?');
             $stmt->execute([$idPedido]);
-            $statusAtual = $stmt->fetchColumn();
+            $pedidoAtual = $stmt->fetch();
 
-            if ($statusAtual === false) {
+            if (!$pedidoAtual) {
                 throw new RuntimeException('Pedido não encontrado.');
             }
-            if (in_array($statusAtual, ['Finalizado', 'Cancelado'], true)) {
-                throw new RuntimeException("Pedido \"$statusAtual\" é definitivo e não pode mais ter o status alterado.");
+            if (in_array($pedidoAtual['status'], ['Finalizado', 'Cancelado'], true)) {
+                throw new RuntimeException("Pedido \"{$pedidoAtual['status']}\" é definitivo e não pode mais ter o status alterado.");
             }
 
             $pdo->beginTransaction();
@@ -74,6 +76,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $pdo->prepare('UPDATE Pedidos SET status = ? WHERE id_pedido = ?')->execute([$novoStatus, $idPedido]);
+
+            if (in_array($novoStatus, ['Finalizado', 'Cancelado'], true)) {
+                liberarMesaSeSemPedidosAtivos($pdo, $pedidoAtual['id_mesa'] !== null ? (int) $pedidoAtual['id_mesa'] : null);
+            }
+
             $pdo->commit();
             definirFlash('sucesso', 'Status do pedido atualizado.');
         }

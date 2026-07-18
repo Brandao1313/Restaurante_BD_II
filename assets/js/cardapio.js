@@ -2,6 +2,7 @@ let baseUrl = '';
 let idClienteAtual = null;
 let produtosCarregados = [];
 let categoriaAtiva = '';
+let mesaFixadaId = null;
 
 function chaveCarrinho() {
     return `carrinho_cliente_${idClienteAtual}`;
@@ -15,9 +16,10 @@ function salvarCarrinho(carrinho) {
     localStorage.setItem(chaveCarrinho(), JSON.stringify(carrinho));
 }
 
-function iniciarCardapio(idCliente, baseUrlParam) {
+function iniciarCardapio(idCliente, baseUrlParam, mesaFixada) {
     idClienteAtual = idCliente;
     baseUrl = baseUrlParam;
+    mesaFixadaId = mesaFixada;
 
     document.getElementById('busca-produto').addEventListener('input', renderizarGrid);
     document.querySelectorAll('.aba-categoria').forEach((botao) => {
@@ -35,8 +37,21 @@ function iniciarCardapio(idCliente, baseUrlParam) {
     });
 
     carregarProdutos();
-    carregarMesas();
+    if (!mesaFixadaId) {
+        carregarMesas();
+    }
     renderizarCarrinho();
+}
+
+async function trocarMesa() {
+    if (!confirm('Deseja escolher outra mesa? Isso não afeta pedidos já enviados.')) return;
+
+    try {
+        await apiFetch(`${baseUrl}/api/mesas/trocar.php`, { method: 'POST' });
+        window.location.reload();
+    } catch (erro) {
+        alert(erro.message);
+    }
 }
 
 async function carregarProdutos() {
@@ -157,7 +172,7 @@ async function finalizarPedido() {
     mensagem.innerHTML = '';
 
     const carrinho = obterCarrinho();
-    const idMesa = document.getElementById('select-mesa').value;
+    const idMesa = mesaFixadaId || document.getElementById('select-mesa').value;
 
     if (carrinho.length === 0) {
         mensagem.innerHTML = '<div class="mensagem-erro">Seu carrinho está vazio.</div>';

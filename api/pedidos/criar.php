@@ -2,9 +2,10 @@
 require_once __DIR__ . '/../../config/session.php';
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/funcoes_estoque.php';
+require_once __DIR__ . '/../../includes/log.php';
 
 header('Content-Type: application/json');
-exigirPerfil(['cliente']);
+exigirPerfil(['cliente', 'garcom']);
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -14,6 +15,14 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $dados = json_decode(file_get_contents('php://input'), true) ?? [];
 
 $idMesa = (int) ($dados['id_mesa'] ?? 0);
+
+// Cliente com mesa já fixada na sessão (por pedido anterior ou reserva do
+// turno atual) sempre pede para aquela mesa, ignorando qualquer id_mesa
+// enviado pelo front-end.
+if (perfilAtual() === 'cliente' && isset($_SESSION['id_mesa_atual'])) {
+    $idMesa = (int) $_SESSION['id_mesa_atual'];
+}
+
 $observacao = trim($dados['observacao'] ?? '');
 $itens = $dados['itens'] ?? [];
 
@@ -37,13 +46,16 @@ if ($mesa['status'] === 'Reservada') {
     die(json_encode(['erro' => 'Mesa reservada, selecione outra mesa.']));
 }
 
+$idCliente = perfilAtual() === 'cliente' ? $_SESSION['id_cliente'] : null;
+$idFuncionario = perfilAtual() === 'garcom' ? $_SESSION['id_funcionario'] : null;
+
 try {
     $pdo->beginTransaction();
 
     $pdo->prepare(
         "INSERT INTO Pedidos (id_cliente, id_funcionario, id_mesa, status, data_criacao, observacao)
-         VALUES (?, NULL, ?, 'Aberto', NOW(), ?)"
-    )->execute([$_SESSION['id_cliente'], $idMesa, $observacao]);
+         VALUES (?, ?, ?, 'Aberto', NOW(), ?)"
+    )->execute([$idCliente, $idFuncionario, $idMesa, $observacao]);
     $idPedido = (int) $pdo->lastInsertId();
 
     foreach ($itens as $item) {
@@ -78,6 +90,14 @@ try {
     $pdo->rollBack();
     http_response_code(409);
     die(json_encode(['erro' => $e->getMessage()]));
+}
+
+if ($idFuncionario !== null) {
+    registrarLog($pdo, $idFuncionario, null, 'abrir_comanda', "Pedido #$idPedido lançado na mesa #$idMesa");
+}
+
+if ($idCliente !== null) {
+    $_SESSION['id_mesa_atual'] = $idMesa;
 }
 
 http_response_code(201);

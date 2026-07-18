@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../config/session.php';
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/funcoes_estoque.php';
+require_once __DIR__ . '/../../includes/funcoes_mesa.php';
 
 header('Content-Type: application/json');
 exigirPerfil(['cliente']);
@@ -21,7 +22,7 @@ if ($idPedido <= 0) {
 
 $pdo = getConexao();
 
-$stmt = $pdo->prepare('SELECT id_cliente FROM Pedidos WHERE id_pedido = ?');
+$stmt = $pdo->prepare('SELECT id_cliente, id_mesa FROM Pedidos WHERE id_pedido = ?');
 $stmt->execute([$idPedido]);
 $pedido = $stmt->fetch();
 
@@ -53,6 +54,7 @@ try {
 
     $pdo->prepare("UPDATE ItensPedido SET status = 'Cancelado' WHERE id_pedido = ?")->execute([$idPedido]);
     $pdo->prepare("UPDATE Pedidos SET status = 'Cancelado' WHERE id_pedido = ?")->execute([$idPedido]);
+    liberarMesaSeSemPedidosAtivos($pdo, $pedido['id_mesa'] !== null ? (int) $pedido['id_mesa'] : null);
 
     $pdo->commit();
 } catch (Exception $e) {
